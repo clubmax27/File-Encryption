@@ -17,6 +17,9 @@ int main()
     std::string dir;
     getline(std::cin,dir);
 
+    // Recuperer l'extention de fichier
+    std::string extension = dir.substr(dir.find(".") + 1);
+
     // Remplacer les "\" par des "\\"
     boost::replace_all(dir,"\\","\\\\");
 
@@ -39,7 +42,8 @@ int main()
 
     // Ecriture
     std::string dir_png = dir;
-    boost::replace_all(dir_png,".png","_Encrypted.txt");
+    boost::replace_all(dir_png,("." + extension),("_fileExt_" + extension + "_Encrypted.clop"));
+
     std::ofstream ecriture(dir_png.c_str(), std::ios::out | std::ios::binary);
 
     // Si le fichier est ouvert

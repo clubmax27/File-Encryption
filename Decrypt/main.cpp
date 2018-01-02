@@ -20,6 +20,11 @@ int main()
     // Remplacer les "\" par des "\\"
     boost::replace_all(dir,"\\","\\\\");
 
+    // Trouver l'extention du fichier d'origine
+    std::string extension = dir.substr(dir.find("fileExt_") + 8);
+
+    extension = extension.substr(0, extension.find("_"));
+
     // Ouvrir le fichier en binaire
     std::ifstream file (dir.c_str(), std::ios::in | std::ios::binary | std::ios::ate); //on ouvre le fichier en binaire
 
@@ -39,7 +44,7 @@ int main()
 
     // Ecriture
     std::string dir_png = dir;
-    boost::replace_all(dir_png,"_Encrypted.txt",".png");
+    boost::replace_all(dir_png,("_fileExt_" + extension + "_Encrypted.clop"),("." + extension));
     std::ofstream ecriture(dir_png.c_str(), std::ios::out | std::ios::binary);
 
     // Si le fichier est ouvert
