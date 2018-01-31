@@ -1,76 +1,126 @@
 // Decryptor
 
-#include <fstream>
 #include <iostream>
 #include <string>
-#include "base64.cpp"
+#include "checkPath.cpp"
+#include "decryptFile.cpp"
 #include <windows.h>
-#include <boost/algorithm/string/replace.hpp>
+#include <dirent.h>
+#include <unistd.h>
+
+#ifndef WIN32
+    #include <sys/types.h>
+#endif
+
+
+void exploreFolder(std::string path)
+{
+    // Déclaration des variables
+    struct dirent * fichier = NULL;
+    DIR * directory(NULL);
+    std::string file;
+    int lastDot;
+
+    //If there is no \\ at the end of the path, add them
+    if(path[path.length() - 1] != '\\')
+    {
+        path += "\\\\";
+    }
+
+    directory = opendir(path.c_str());
+    if(directory == NULL) // If the dirrectory don't exist
+    {
+        std::cout << std::endl << "[ERR] The directory could not be found\n";
+        system("pause");
+    }
+
+    fichier = readdir(directory); //Skip the first base directory in every folder
+    fichier = readdir(directory); //Skip the second base directory in every folder
+
+    while((fichier = readdir(directory)) != NULL)
+    {
+        file = fichier->d_name;
+        if(is_dir((path + file).c_str()))
+        {
+            path += "\\";
+            exploreFolder(path + file);
+        }
+        else
+        {
+            // Savoir si il y a plusieurs points dans le path
+            for(int i = 0; i < file.length(); i++)
+            {
+                if(file[i] == '.')
+                {
+                    // Mettre la position du dernier point dans lastDot
+                    lastDot = i;
+                }
+            }
+
+            // Recuperer l'extention de fichier
+            std::string extension = file.substr(lastDot + 1);
+
+            if(extension != "clop")
+            {
+                std::cout << "[ALERT] " + file + " is not a .clop file, skipping ...\n\n";
+                continue;
+            }
+
+            std::cout << "[INFO] Decrypting " << path + file << "..." << std::endl;
+            decryptFile(path + file);
+            remove((path + file).c_str());
+        }
+    }
+
+    if(closedir(directory) == -1)
+    {
+        return;
+    }
+}
 
 int main()
 {
-    // Déclaration de variables
-    std::string base64;
-    std::string extension;
-    int headerSize;
-    std::ifstream::pos_type size;
-    std::string memblock;
+    // Déclaration des variables
+    bool dir;
 
     // Recuperation du chemin du fichier a crypter
-    std::string dir;
-    getline(std::cin,dir);
+    std::string path;
+    getline(std::cin,path);
 
     // Remplacer les "\" par des "\\"
-    boost::replace_all(dir,"\\","\\\\");
+    boost::replace_all(path,"\\","\\\\");
 
-    // Trouver l'extention du fichier d'origine
+    // If the path is a dir
+    if(is_dir(path.c_str()))
     {
-        std::ifstream file(dir.c_str(), std::ios::in);
-        char* tempheadblock = new char [100];
-        file.seekg (0, std::ios::beg);
-        file.read(tempheadblock, 100);
-        std::string headblock = (std::string)tempheadblock;
-
-        extension = headblock.substr(headblock.find("fileExt="), headblock.find("|"));
-        std::string header = headblock.substr(0,headblock.find("b4d4c077f070bfc6205bca7d1acfadff") + 32);
-        headerSize = header.size();
+        std::cout << "[INFO] Given path is a directory\n";
+        std::cout << "-------------------------------------\n\n";
+        dir = true;
+    }
+    // If the path is a file
+    else if(is_file(path.c_str()))
+    {
+        std::cout << "[INFO] Given path is a file\n";
+        std::cout << "-------------------------------------\n\n";
+        dir = false;
+    }
+    //This shouldn't ever happend
+    else
+    {
+        std::cout << "[ERR] THIS IS AN ERROR YOU SHOULDN'T SEE\n";
+        std::cout << "-------------------------------------\n\n";
     }
 
-    // Ouvrir le fichier en binaire
-    std::ifstream file(dir.c_str(), std::ios::in | std::ios::binary | std::ios::ate); //on ouvre le fichier en binaire
-
-    // Si le fichier est ouvret
-    if (file.is_open())
+    if(dir)
     {
-        size = file.tellg(); // Récupère la taille en octet du fichier
-        memblock = new char [size - headerSize];
-        file.seekg (headerSize, std::ios::beg);
-        getline(file,base64);
-        memblock = base64_decode(base64);
-
-        file.close();
-
-        std::cout << "Chargement du fichier termine. size:" << size << std::endl;
+        exploreFolder(path);
     }
-    else std::cout << "Erreur d'ouverture de fichier en lecture" << std::endl;
-
-    // Ecriture
-    std::string dir_png = dir;
-    extension = extension.substr(8);
-    std::cout << extension;
-    boost::replace_all(dir_png,(".clop"),("." + extension));
-    std::ofstream ecriture(dir_png.c_str(), std::ios::out | std::ios::binary);
-
-    // Si le fichier est ouvert
-    if(ecriture.is_open())
+    else
     {
-        ecriture << memblock;
-
-        std::cout << "Le fichier est ecrit" << std::endl;
+        decryptFile(path);
     }
-    else std::cout << "Erreur d'ouverture de fichier en ecriture" << std::endl;
-
-    remove(dir.c_str());
+    std::cout << "-------------------------------------\n\n";
+    std::cout << "[INFO] All file has been decrypted\n\n";
 
     system("pause");
 
