@@ -76,7 +76,7 @@ void cryptFile(std::string path)
         ecriture.seekp(headerSize, std::ios::beg);
         ecriture << base64;
 
-        std::cout << "[INFO] Done !" << std::endl;
+        std::cout << "[INFO] Done !\n" << std::endl;
     }
     else std::cout << "Erreur d'ouverture de fichier en ecriture" << std::endl;
 
