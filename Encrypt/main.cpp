@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include "base64.cpp"
+#include "checkPath.cpp"
 #include <windows.h>
 #include <boost/algorithm/string/replace.hpp>
 
@@ -22,12 +23,28 @@ int main()
     // Recuperer l'extention de fichier
     std::string extension = dir.substr(dir.find(".") + 1);
 
+    // Remplacer les "\" par des "\\"
+    boost::replace_all(dir,"\\","\\\\");
+
+    // If the path is a dir
+    if(is_dir(dir.c_str()))
+    {
+        std::cout << "It's a dir\n";
+    }
+    // If the path is a file
+    else if(is_file(dir.c_str()))
+    {
+        std::cout << "It's a file\n";
+    }
+    //This shouldn't ever happend
+    else
+    {
+        std::cout << "THIS IS AN ERROR YOU SHOULDN'T SEE\n";
+    }
+
     // Mise en place du header
     std::string header;
     header = "fileExt=" + extension + "|";
-
-    // Remplacer les "\" par des "\\"
-    boost::replace_all(dir,"\\","\\\\");
 
     // Ecriture
     std::string dir_png = dir;
